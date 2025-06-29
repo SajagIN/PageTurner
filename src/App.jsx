@@ -1,122 +1,162 @@
-import React, { useState, useEffect } from 'react';
-import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+// src/App.jsx
+import React, { useState, useEffect, createContext, useMemo, useCallback } from 'react';
+import { BrowserRouter as Router, Routes, Route, Link as RouterLink } from 'react-router-dom';
 import {
-  Box,
-  Paper,
-  BottomNavigation,
-  BottomNavigationAction,
-  IconButton,
-  useTheme,
+  AppBar,
+  Toolbar,
   Typography,
+  CssBaseline,
+  Box,
+  Link,
+  Button,
+  IconButton,
+  Switch,
+  createTheme,
+  ThemeProvider,
+  useTheme,
 } from '@mui/material';
+import Brightness4Icon from '@mui/icons-material/Brightness4'; // Dark mode icon
+import Brightness7Icon from '@mui/icons-material/Brightness7'; // Light mode icon
 
-import HomeIcon from '@mui/icons-material/Home';
-import BookIcon from '@mui/icons-material/Book';
-import AutoStoriesIcon from '@mui/icons-material/AutoStories';
-import Brightness4Icon from '@mui/icons-material/Brightness4';
-import Brightness7Icon from '@mui/icons-material/Brightness7';
-
-import { useColorMode } from './ThemeContext';
-
-import HomePage from './pages/HomePage';
+// Import your pages
+import Homepage from './pages/Homepage'; // Ensure 'Homepage' matches file casing
 import BrowseBooksPage from './pages/BrowseBooksPage';
 import BookDetailPage from './pages/BookDetailPage';
 import MangaPage from './pages/MangaPage';
 import MangaDetailPage from './pages/MangaDetailPage';
 
+// Import ThemeContext if it's external, otherwise define it here or use internal state
+import { ColorModeContext } from './ThemeContext';
+
 function App() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { toggleColorMode } = useColorMode();
-  const theme = useTheme();
+  // Theme state and toggler logic from ThemeContext.jsx
+  const [mode, setMode] = useState('dark'); // Default to dark mode as per common preference
 
-  const [value, setValue] = useState(() => {
-    if (location.pathname === '/') return 0;
-    if (location.pathname.startsWith('/books')) return 1;
-    if (location.pathname.startsWith('/manga')) return 2;
-    return 0;
-  });
+  const colorMode = useMemo(
+    () => ({
+      toggleColorMode: () => {
+        setMode((prevMode) => (prevMode === 'light' ? 'dark' : 'light'));
+      },
+    }),
+    [],
+  );
 
-  useEffect(() => {
-    if (location.pathname === '/') setValue(0);
-    else if (location.pathname.startsWith('/books')) setValue(1);
-    else if (location.pathname.startsWith('/manga')) setValue(2);
-    else setValue(false);
-  }, [location.pathname]);
-
-  const handleTabChange = (event, newValue) => {
-    setValue(newValue);
-    if (newValue === 0) navigate('/');
-    if (newValue === 1) navigate('/books');
-    if (newValue === 2) navigate('/manga');
-  };
+  const theme = useMemo(
+    () =>
+      createTheme({
+        palette: {
+          mode,
+          // Customizing palette for better visual appeal
+          primary: {
+            main: mode === 'light' ? '#3f51b5' : '#90caf9', // Blue shades
+          },
+          secondary: {
+            main: mode === 'light' ? '#f50057' : '#f48fb1', // Pink shades
+          },
+          background: {
+            default: mode === 'light' ? '#f5f5f5' : '#121212', // Light grey or dark grey
+            paper: mode === 'light' ? '#ffffff' : '#1e1e1e', // White or slightly lighter dark grey for cards
+          },
+          text: {
+            primary: mode === 'light' ? '#212121' : '#ffffff', // Dark text for light, white for dark
+            secondary: mode === 'light' ? '#757575' : '#bdbdbd', // Grey text for light, lighter grey for dark
+          },
+          divider: mode === 'light' ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.12)', // Subtle divider color
+        },
+        typography: {
+          fontFamily: 'Inter, sans-serif', // Using Inter font
+        },
+        components: {
+          MuiButton: {
+            styleOverrides: {
+              root: {
+                borderRadius: '8px', // Apply rounded corners to all buttons
+              },
+            },
+          },
+          MuiCard: {
+            styleOverrides: {
+              root: {
+                borderRadius: '10px', // Apply rounded corners to cards
+              },
+            },
+          },
+          MuiTextField: {
+            styleOverrides: {
+              root: {
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '10px', // Apply rounded corners to text fields
+                },
+              },
+            },
+          },
+        },
+      }),
+    [mode],
+  );
 
   return (
-    <Box sx={{ pb: 7, position: 'relative' }}>
-      <IconButton
-        sx={{
-          position: 'fixed',
-          top: 10,
-          right: 10,
-          zIndex: 9999,
-          backgroundColor: (t) => t.palette.background.paper,
-          borderRadius: '50%',
-          boxShadow: (t) => t.shadows[2],
-          '&:hover': {
-            backgroundColor: (t) => t.palette.action.hover,
-          },
-          color: (t) => t.palette.text.primary,
-        }}
-        onClick={() => {
-          console.log('App: Theme toggler button clicked!');
-          toggleColorMode();
-        }}
-        aria-label="toggle light/dark theme"
-      >
-        {theme.palette.mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
-      </IconButton>
+    <ColorModeContext.Provider value={colorMode}>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <Router>
+          <Box sx={{ flexGrow: 1, height: '100vh', display: 'flex', flexDirection: 'column' }}>
+            <AppBar position="static" color="transparent" elevation={0} sx={{ borderBottom: '1px solid', borderColor: 'divider' }}>
+              <Toolbar>
+                <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 'bold' }}>
+                  PageTurner
+                </Typography>
+                <Button color="inherit" component={RouterLink} to="/">
+                  Home
+                </Button>
+                <Button color="inherit" component={RouterLink} to="/books">
+                  Books
+                </Button>
+                <Button color="inherit" component={RouterLink} to="/manga">
+                  Manga
+                </Button>
+                {/* Theme Toggler Button */}
+                <IconButton
+                  sx={{
+                    ml: 1,
+                    // Position fixed and high zIndex to ensure it's always on top
+                    position: 'fixed',
+                    bottom: 16,
+                    right: 16,
+                    backgroundColor: theme.palette.primary.main,
+                    color: theme.palette.primary.contrastText,
+                    borderRadius: '50%',
+                    p: 1,
+                    boxShadow: theme.shadows[3],
+                    zIndex: 9999, // Very high z-index
+                    '&:hover': {
+                        backgroundColor: theme.palette.primary.dark,
+                    },
+                  }}
+                  onClick={colorMode.toggleColorMode}
+                  color="inherit"
+                  aria-label="toggle theme"
+                >
+                  {mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
+                </IconButton>
+              </Toolbar>
+            </AppBar>
 
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/books" element={<BrowseBooksPage />} />
-        <Route path="/books/:bookId" element={<BookDetailPage />} />
-        <Route path="/manga" element={<MangaPage />} />
-        <Route path="/manga/:mangaId" element={<MangaDetailPage />} />
-        <Route
-          path="*"
-          element={
-            <Box sx={{ p: 3, textAlign: 'center' }}>
-              <Typography variant="h4">404 - Page Not Found</Typography>
+            <Box sx={{ flexGrow: 1, overflowY: 'auto' }}>
+              <Routes>
+                <Route path="/" element={<Homepage />} />
+                <Route path="/books" element={<BrowseBooksPage />} />
+                <Route path="/books/:bookId" element={<BookDetailPage />} />
+                <Route path="/manga" element={<MangaPage />} />
+                {/* Ensure the MangaDetailPage route uses a splat parameter if needed for MangaPill IDs */}
+                {/* For Jikan, mal_id is usually a simple number, so :mangaId is sufficient */}
+                <Route path="/manga/:mangaId" element={<MangaDetailPage />} />
+              </Routes>
             </Box>
-          }
-        />
-      </Routes>
-      <Paper
-        sx={{
-          position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          zIndex: 1000,
-        }}
-        elevation={3}
-      >
-        <BottomNavigation
-          showLabels
-          value={value}
-          onChange={handleTabChange}
-          sx={{
-            backgroundColor: (t) => t.palette.background.paper,
-            borderTop: '1px solid',
-            borderColor: (t) => t.palette.divider,
-          }}
-        >
-          <BottomNavigationAction label="Home" icon={<HomeIcon />} />
-          <BottomNavigationAction label="Books" icon={<BookIcon />} />
-          <BottomNavigationAction label="Manga" icon={<AutoStoriesIcon />} />
-        </BottomNavigation>
-      </Paper>
-    </Box>
+          </Box>
+        </Router>
+      </ThemeProvider>
+    </ColorModeContext.Provider>
   );
 }
 
