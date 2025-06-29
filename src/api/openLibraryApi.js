@@ -4,7 +4,10 @@ import axios from 'axios';
 
 const OPEN_LIBRARY_BASE_URL = 'https://openlibrary.org';
 const OPEN_LIBRARY_COVERS_URL = 'https://covers.openlibrary.org';
-const BACKEND_BASE_URL = 'http://localhost:3001'; // Your backend server URL
+
+// In a combined Vercel deployment, the frontend and backend are on the same domain.
+// So, relative paths are correct for API calls.
+const BACKEND_BASE_PATH = '/api'; // Use a base path for all backend APIs
 
 /**
  * Debounce function to limit how often a function is called.
@@ -31,7 +34,7 @@ export const debounce = (func, delay) => {
  */
 export const searchOpenLibraryBooks = async (query) => {
     if (!query) {
-        console.warn("No query provided for Open Library search.");
+        console.warn("[openLibraryApi] No query provided for Open Library search.");
         return [];
     }
 
@@ -39,12 +42,12 @@ export const searchOpenLibraryBooks = async (query) => {
     const searchUrl = `${OPEN_LIBRARY_BASE_URL}/search.json?q=${encodedQuery}&limit=20`;
 
     try {
-        console.log(`Searching Open Library URL: ${searchUrl}`);
+        console.log(`[openLibraryApi] Searching Open Library URL: ${searchUrl}`);
         const response = await axios.get(searchUrl);
         const data = response.data;
 
         if (!data || !data.docs || data.docs.length === 0) {
-            console.log(`No results found for query: "${query}"`);
+            console.log(`[openLibraryApi] No results found for query: "${query}"`);
             return [];
         }
 
@@ -60,20 +63,18 @@ export const searchOpenLibraryBooks = async (query) => {
                 cover: coverImageUrl,
                 averageRating: doc.ratings_average || null,
                 ratingsCount: doc.ratings_count || null,
+                isbns: doc.isbn || [] // Include ISBNs for Libgen search
             };
-        }).filter(book => book.id && book.title && book.authors.length > 0);
+        }).filter(book => book.id && book.title && book.authors.length > 0); // Ensure minimal data for validity
 
-        console.log(`Found ${books.length} books for query: "${query}"`);
+        console.log(`[openLibraryApi] Found ${books.length} books for query: "${query}"`);
         return books;
 
     } catch (error) {
-        console.error("Failed to search Open Library books:", error.message);
+        console.error("[openLibraryApi] Failed to search Open Library books:", error.message);
         if (error.response) {
-            console.error('Error Response Data:', error.response.data);
-            console.error('Error Response Status:', error.response.status);
-            console.error('Error Response Headers:', error.response.headers);
-        } else if (error.request) {
-            console.error('Error Request:', error.request);
+            console.error('[openLibraryApi] Error Response Data:', error.response.data);
+            console.error('[openLibraryApi] Error Response Status:', error.response.status);
         }
         throw new Error("Failed to connect to Open Library search. Please try again.");
     }
@@ -86,7 +87,7 @@ export const searchOpenLibraryBooks = async (query) => {
  */
 export const getOpenLibraryBookDetails = async (openLibraryWorkId) => {
     if (!openLibraryWorkId) {
-        console.error("No Open Library Work ID provided for details fetching.");
+        console.error("[openLibraryApi] No Open Library Work ID provided for details fetching.");
         return null;
     }
 
@@ -94,12 +95,12 @@ export const getOpenLibraryBookDetails = async (openLibraryWorkId) => {
     const detailsUrl = `${OPEN_LIBRARY_BASE_URL}${formattedWorkId}.json`;
 
     try {
-        console.log(`Fetching Open Library book details for ID: ${formattedWorkId}`);
+        console.log(`[openLibraryApi] Fetching Open Library book details for ID: ${formattedWorkId}`);
         const response = await axios.get(detailsUrl);
         const data = response.data;
 
         if (!data) {
-            console.log(`No details found for Work ID: ${formattedWorkId}`);
+            console.log(`[openLibraryApi] No details found for Work ID: ${formattedWorkId}`);
             return null;
         }
 
@@ -138,20 +139,19 @@ export const getOpenLibraryBookDetails = async (openLibraryWorkId) => {
             pageCount: pageCount,
             categories: categories,
             publishedDate: publishedDate,
-            imageLinks: { thumbnail: coverImageUrl || 'https://placehold.co/225x320?text=No+Cover' }, // Placeholder fallback
+            imageLinks: { thumbnail: coverImageUrl || 'https://placehold.co/225x320?text=No+Cover' },
             previewLink: `${OPEN_LIBRARY_BASE_URL}${formattedWorkId}`,
             infoLink: `${OPEN_LIBRARY_BASE_URL}${formattedWorkId}`,
             averageRating: data.ratings_average || null,
             ratingsCount: data.ratings_count || null,
-            // Add ISBNs from editions if available and needed for Libgen search
-            isbns: data.isbn_13 || data.isbn_10 || [], // Might need to fetch edition details for comprehensive ISBNs
+            isbns: data.isbn_13 || data.isbn_10 || [], // Ensure ISBNs are collected for Libgen
         };
 
     } catch (error) {
-        console.error(`Failed to fetch Open Library book details for ID ${formattedWorkId}:`, error.message);
+        console.error(`[openLibraryApi] Failed to fetch Open Library book details for ID ${formattedWorkId}:`, error.message);
         if (error.response) {
-            console.error('Error Response Data:', error.response.data);
-            console.error('Error Response Status:', error.response.status);
+            console.error('[openLibraryApi] Error Response Data:', error.response.data);
+            console.error('[openLibraryApi] Error Response Status:', error.response.status);
         }
         throw new Error("Failed to connect to Open Library for book details. Please try again.");
     }
@@ -163,34 +163,42 @@ const getAuthorNameFromOpenLibrary = async (authorKey) => {
         const response = await axios.get(`${OPEN_LIBRARY_BASE_URL}${authorKey}.json`);
         return response.data.name || null;
     } catch (error) {
-        console.error(`Failed to fetch author details for key ${authorKey}:`, error.message);
+        console.error(`[openLibraryApi] Failed to fetch author details for key ${authorKey}:`, error.message);
         return null;
     }
 };
 
 /**
  * Fetches a download link for a book from Libgen via the backend proxy.
- * @param {string} title Book title.
- * @param {string} author Book author (optional).
- * @param {string} isbn Book ISBN (optional).
+ * Sends a POST request with book details in the body.
+ * @param {Object} bookDetails - Object containing title, author, isbn.
  * @returns {Promise<string|null>} A promise that resolves to the download URL or null if not found.
  */
 export const getLibgenDownloadLink = async ({ title, author, isbn }) => {
     try {
-        const params = new URLSearchParams();
-        if (title) params.append('title', title);
-        if (author) params.append('author', author);
-        if (isbn) params.append('isbn', isbn);
-
-        const response = await axios.get(`${BACKEND_BASE_URL}/api/libgen-download?${params.toString()}`);
-        return response.data.downloadUrl;
+        console.log(`[openLibraryApi] Requesting Libgen download link from backend: ${BACKEND_BASE_PATH}/libgen-download`);
+        const response = await axios.post(`${BACKEND_BASE_PATH}/libgen-download`, {
+            title,
+            author,
+            isbn
+        });
+        if (response.data && response.data.downloadUrl) {
+            console.log(`[openLibraryApi] Received download URL from backend: ${response.data.downloadUrl}`);
+            return response.data.downloadUrl;
+        } else {
+            throw new Error('Backend did not return a valid download URL.');
+        }
     } catch (error) {
-        console.error('Error fetching Libgen download link:', error);
+        console.error("[openLibraryApi] Error fetching Libgen download link from backend:", error);
         // Differentiate between 404 (not found) and other errors
         if (error.response && error.response.status === 404) {
-            throw new Error('Book not found on Libgen.');
+            throw new Error('Book not found on Libgen via backend.');
         } else {
-            throw new Error(error.response?.data?.message || 'Failed to get download link from Libgen.');
+            // Provide more specific message for network errors
+            if (error.code === 'ERR_NETWORK') {
+                 throw new Error('Network error. Could not connect to the backend server for Libgen. Is the backend running?');
+            }
+            throw new Error(error.response?.data?.message || 'Failed to get download link from Libgen via backend.');
         }
     }
 };
