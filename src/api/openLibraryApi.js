@@ -5,9 +5,8 @@ import axios from 'axios';
 const OPEN_LIBRARY_BASE_URL = 'https://openlibrary.org';
 const OPEN_LIBRARY_COVERS_URL = 'https://covers.openlibrary.org';
 
-// In a combined Vercel deployment, the frontend and backend are on the same domain.
-// So, relative paths are correct for API calls.
-const BACKEND_BASE_PATH = '/api'; // Use a base path for all backend APIs
+// Use a relative path for backend API calls when deployed on Vercel
+const BACKEND_BASE_PATH = '/api';
 
 /**
  * Debounce function to limit how often a function is called.
