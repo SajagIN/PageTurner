@@ -1,36 +1,34 @@
 // src/App.jsx
-import React, { useState, useEffect, createContext, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, createContext } from 'react'; // Added createContext
 import { BrowserRouter as Router, Routes, Route, Link as RouterLink } from 'react-router-dom';
 import {
   AppBar,
   Toolbar,
   Typography,
-  CssBaseline,
+  CssBaseline, // Import CssBaseline for consistent styling
   Box,
-  Link,
   Button,
   IconButton,
-  Switch,
   createTheme,
   ThemeProvider,
-  useTheme,
 } from '@mui/material';
 import Brightness4Icon from '@mui/icons-material/Brightness4'; // Dark mode icon
 import Brightness7Icon from '@mui/icons-material/Brightness7'; // Light mode icon
 
 // Import your pages
-import Homepage from './pages/Homepage'; // Ensure 'Homepage' matches file casing
+import Homepage from './pages/Homepage';
 import BrowseBooksPage from './pages/BrowseBooksPage';
 import BookDetailPage from './pages/BookDetailPage';
 import MangaPage from './pages/MangaPage';
 import MangaDetailPage from './pages/MangaDetailPage';
 
-// Import ThemeContext if it's external, otherwise define it here or use internal state
-import { ColorModeContext } from './ThemeContext';
+// Define ColorModeContext directly here, or import it if ThemeContext.jsx only exports this.
+// For self-containment in App.jsx, defining it here is often clearer for simple apps.
+export const ColorModeContext = createContext({ toggleColorMode: () => {} });
 
 function App() {
-  // Theme state and toggler logic from ThemeContext.jsx
-  const [mode, setMode] = useState('dark'); // Default to dark mode as per common preference
+  // Theme state and toggler logic
+  const [mode, setMode] = useState('dark'); // Default to dark mode or user preference
 
   const colorMode = useMemo(
     () => ({
@@ -98,7 +96,7 @@ function App() {
   return (
     <ColorModeContext.Provider value={colorMode}>
       <ThemeProvider theme={theme}>
-        <CssBaseline />
+        <CssBaseline /> {/* Applies base CSS styles, often crucial for consistent rendering */}
         <Router>
           <Box sx={{ flexGrow: 1, height: '100vh', display: 'flex', flexDirection: 'column' }}>
             <AppBar position="static" color="transparent" elevation={0} sx={{ borderBottom: '1px solid', borderColor: 'divider' }}>
@@ -119,8 +117,7 @@ function App() {
                 <IconButton
                   sx={{
                     ml: 1,
-                    // Position fixed and high zIndex to ensure it's always on top
-                    position: 'fixed',
+                    position: 'fixed', // Essential for z-index to work against other content
                     bottom: 16,
                     right: 16,
                     backgroundColor: theme.palette.primary.main,
@@ -128,7 +125,7 @@ function App() {
                     borderRadius: '50%',
                     p: 1,
                     boxShadow: theme.shadows[3],
-                    zIndex: 9999, // Very high z-index
+                    zIndex: 9999, // Set a very high z-index to ensure it's on top
                     '&:hover': {
                         backgroundColor: theme.palette.primary.dark,
                     },
@@ -146,10 +143,8 @@ function App() {
               <Routes>
                 <Route path="/" element={<Homepage />} />
                 <Route path="/books" element={<BrowseBooksPage />} />
-                <Route path="/books/:bookId" element={<BookDetailPage />} />
+                <Route path="/books/:id" element={<BookDetailPage />} />
                 <Route path="/manga" element={<MangaPage />} />
-                {/* Ensure the MangaDetailPage route uses a splat parameter if needed for MangaPill IDs */}
-                {/* For Jikan, mal_id is usually a simple number, so :mangaId is sufficient */}
                 <Route path="/manga/:mangaId" element={<MangaDetailPage />} />
               </Routes>
             </Box>
