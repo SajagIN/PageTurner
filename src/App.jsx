@@ -8,7 +8,7 @@
     // Import your pages
     import Homepage from './pages/Homepage';
     import BrowseBooksPage from './pages/BrowseBooksPage';
-    import BookDetailsPage from './pages/BookDetailsPage';
+    import BookDetailsPage from './pages/BookDetailPage';
     import MangaPage from './pages/MangaPage';
     import MangaDetailPage from './pages/MangaDetailPage';
 
