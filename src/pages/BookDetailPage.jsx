@@ -56,28 +56,28 @@ function BookDetailsPage() {
         }
     }, [bookId]);
 
-    const handleLibgenDownload = async () => {
-        if (!bookDetails) return;
+    // const handleLibgenDownload = async () => {
+    //     if (!bookDetails) return;
 
-        setLibgenLoading(true);
-        setLibgenError(null);
-        setLibgenDownloadUrl(null);
+    //     setLibgenLoading(true);
+    //     setLibgenError(null);
+    //     setLibgenDownloadUrl(null);
 
-        try {
-            const downloadUrl = await getLibgenDownloadLink({
-                title: bookDetails.title,
-                author: bookDetails.authors?.[0] || '', 
-                isbn: bookDetails.isbns?.[0] || '' 
-            });
-            setLibgenDownloadUrl(downloadUrl);
-            window.open(downloadUrl, '_blank');
-        } catch (err) {
-            console.error("Libgen download error:", err);
-            setLibgenError(err.message || 'Could not find a download link on Libgen.');
-        } finally {
-            setLibgenLoading(false);
-        }
-    };
+    //     try {
+    //         const downloadUrl = await getLibgenDownloadLink({
+    //             title: bookDetails.title,
+    //             author: bookDetails.authors?.[0] || '', 
+    //             isbn: bookDetails.isbns?.[0] || '' 
+    //         });
+    //         setLibgenDownloadUrl(downloadUrl);
+    //         window.open(downloadUrl, '_blank');
+    //     } catch (err) {
+    //         console.error("Libgen download error:", err);
+    //         setLibgenError(err.message || 'Could not find a download link on Libgen.');
+    //     } finally {
+    //         setLibgenLoading(false);
+    //     }
+    // };
 
     if (loading) {
         return (
@@ -246,7 +246,7 @@ function BookDetailsPage() {
                         </Grid>
                     )}
 
-                    <Grid item xs={12} sm={6}>
+                    {/* <Grid item xs={12} sm={6}>
                         <Button
                             variant="outlined"
                             color="primary"
@@ -257,9 +257,9 @@ function BookDetailsPage() {
                         >
                             {libgenLoading ? 'Searching Libgen...' : 'Download from Libgen'}
                         </Button>
-                    </Grid>
+                    </Grid> */}
                 </Grid>
-                {libgenError && (
+                {/* {libgenError && (
                     <Typography variant="body2" color="error" sx={{ mt: 2, textAlign: 'center', wordBreak: 'break-word' }}>
                         {libgenError}
                     </Typography>
@@ -268,7 +268,7 @@ function BookDetailsPage() {
                     <Typography variant="body2" color="success.main" sx={{ mt: 1, textAlign: 'center', wordBreak: 'break-word' }}>
                         Download started! Check your downloads or click the button again.
                     </Typography>
-                )}
+                )} */}
 
             </Box>
         </Box>
